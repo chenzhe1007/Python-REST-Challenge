@@ -3,8 +3,17 @@ import pymysql
 class Database():
     DB_NAME = "Restful_Challenge"
     TABLE_NAME = "People"
+    USER_NAME = 'root'
+    PASS = '871013'
+    HOST = 'mysql'
     def __init__(self):
         pass
+
+    @staticmethod
+    def get_connection():
+        return pymysql.connect(host= Database.HOST,
+                          user=Database.USER_NAME,
+                          password=Database.PASS)
 
 
     @staticmethod
@@ -50,7 +59,7 @@ class DataLoader():
         pass
 
     @staticmethod
-    def buffered_data_loader_dict(sql, con, paraList):
+    def buffered_data_loader_dict(con, sql, paraList):
         """
         return a list of dictionary key as the column header, recommended for small result set passing
         :param sql: sql stmt passed in
@@ -62,7 +71,7 @@ class DataLoader():
         cursor.execute(sql, paraList)
         columns = cursor.description
         data_set = [{columns[index][0]: column for index, column in enumerate(value)} for value in cursor.fetchall()]
-        cursor.close
+        cursor.close()
         return data_set
 
 

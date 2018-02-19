@@ -126,7 +126,7 @@ class People():
                         " WHERE created_at > %(timestamp)s"])
         if order_by != None:
             sql = " ".join([sql, "ORDER BY", order_by, order_method])
-        return DataLoader.execute_query_res(con, sql, {'timestamp':timestamp})
+        return DataLoader.buffered_data_loader_dict(con, sql, {'timestamp':timestamp})
 
     @staticmethod
     def get_user_by_lname(con, lname=None,timestamp='1970-01-01'):
