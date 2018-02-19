@@ -3,7 +3,6 @@ from flask_cache import Cache
 from functools import wraps
 from people import People
 from database import Database
-import pymysql
 import argparse
 import sys
 import time
@@ -40,7 +39,10 @@ def getPeople():
     Return a standard JSON block of people in any order of format. Must be valid JSON
     '''
     # TODO
-    return jsonify(People.get_all_users(con))
+    con_cur = Database.get_connection()
+    result = jsonify(People.get_all_users(con_cur))
+    con_cur.close()
+    return result
 
 @app.route('/people/age',methods=['GET'])
 @cache.cached(timeout=3, key_prefix='id_age')
@@ -49,8 +51,10 @@ def sortPeopleByAge():
     Returns Json block containing a list of people sorted by age youngest to oldest
     '''
     # TODO
-    return jsonify(People.get_all_users(con, order_by='age'))
-
+    con_cur = Database.get_connection()
+    result = jsonify(People.get_all_users(con_cur, order_by='age'))
+    con_cur.close()
+    return result
 
 @app.route('/ids/lastname/<lastname>',methods=['GET'])
 @cache.memoize(timeout=3)
@@ -60,7 +64,10 @@ def getIdsByLastName(lastname):
     Using path params
     '''
     # TODO
-    return jsonify(People.get_user_by_lname(con, lastname))
+    con_cur = Database.get_connection()
+    result = jsonify(People.get_user_by_lname(con_cur, lastname))
+    con_cur.close()
+    return result
 
 
 
@@ -93,13 +100,14 @@ def create_people():
     has_all_req, msg = people.contains_all_keys()
     if not has_all_req:
         return jsonify({"err": msg}), 400
-
+    con_cur = Database.get_connection()
     if 'ID' in people.profile:
         app.logger.warning("manually input ID has the risk of conflicting with existing, if conflicts records will be ignored")
-        people.insert_with_id(con)
+        people.insert_with_id(con_cur)
     else:
-        people.insert_no_id(con)
-    con.commit()
+        people.insert_no_id(con_cur)
+    con_cur.commit()
+    con_cur.close()
     return getPeople()
 
 
@@ -122,15 +130,15 @@ if __name__ == '__main__':
     # TODO: Initialize any pre-application start code here if needed
     time.sleep(25) #when compose mysql server is slower than flask cause the app to exit
     args = parser.parse_args()
-    con = pymysql.connect(host='mysql',
-                          user='root',
-                          password='871013')
+    con = Database.get_connection()
     app.logger.info("database connection successful")
     Database.create_base_db_setup(con, overwrite=args.remove)
     app.logger.info("base schema, table and column setup done")
     # TODO: Read in people from people.csv into an appropraite data structure so that the endpoints can return data based
     #       on the data in the csv.
     People.create_from_csv(args.file, con)
+    con.close()
+    del con
     app.logger.info("initial user loadded")
     
     app.debug = args.debug
